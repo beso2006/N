@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Adult Nursing II</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/umd/lucide.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Cairo', 'Segoe UI', sans-serif; direction: rtl; min-height: 100vh; background: #0a0f1e; color: #e2e8f0; display: flex; flex-direction: column; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #0d1426; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  button { font-family: 'Cairo', 'Segoe UI', sans-serif; }
+  input { font-family: 'Cairo', 'Segoe UI', sans-serif; }
+  .chapter-card { transition: all 0.3s ease; }
+  .chapter-card:hover { transform: translateX(-4px); }
+  .quiz-opt { transition: all 0.2s ease; }
+  .quiz-opt:not(:disabled):hover { background: rgba(14,165,233,0.1) !important; }
+  .expand-card { transition: all 0.3s ease; }
+  .sidebar-section { transition: all 0.2s ease; }
+  .sidebar-section:hover { background: rgba(255,255,255,0.05) !important; }
+  .tooltip-popup { animation: fadeInUp 0.2s ease; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .progress-fill { transition: width 0.8s ease; }
+  .section-active { background: rgba(14,165,233,0.15) !important; border-right: 3px solid #0ea5e9 !important; }
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+  #topbar { position: sticky; top: 0; z-index: 100; background: #0a0f1e; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  #main-area { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 95px); }
+  #sidebar { width: 280px; background: #060c1a; border-left: 1px solid rgba(255,255,255,0.06); overflow-y: auto; flex-shrink: 0; }
+  #content-area { flex: 1; overflow-y: auto; padding: 24px; }
+  .search-dropdown { position: absolute; top: 100%; right: 20px; left: 20px; background: #111827; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; z-index: 50; max-height: 220px; overflow-y: auto; }
+  .search-btn { width: 100%; text-align: right; padding: 10px 14px; background: transparent; border: none; color: #e2e8f0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 2px; }
+  .search-btn:hover { background: rgba(255,255,255,0.05); }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Topbar -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:16px;padding:10px 20px;">
+      <button id="sidebar-toggle" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;cursor:pointer;color:#94a3b8;" onclick="toggleSidebar()">
+        <svg id="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <span style="font-weight:700;font-size:14px;color:#e2e8f0;">Adult Nursing II</span>
+      <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:999px;height:6px;overflow:hidden;">
+        <div id="scroll-progress-bar" class="progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0ea5e9,#8b5cf6);border-radius:999px;"></div>
+      </div>
+      <span id="scroll-pct" style="font-size:12px;color:#64748b;min-width:36px;">0%</span>
+      <div style="display:flex;align-items:center;gap:6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:4px 10px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span id="progress-pct" style="font-size:12px;color:#10b981;font-weight:600;">0% مكتمل</span>
+      </div>
+    </div>
+    <div style="padding:0 20px 10px;position:relative;">
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px 14px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search-input" value="" oninput="handleSearch(this.value)" placeholder="ابحث عن أي مصطلح طبي أو موضوع..." style="flex:1;background:transparent;border:none;outline:none;color:#e2e8f0;font-size:14px;text-align:right;direction:rtl;" />
+      </div>
+      <div id="search-results" style="display:none;" class="search-dropdown"></div>
+    </div>
+  </div>
+
+  <div id="main-area">
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div style="padding:16px 12px;">
+        <div style="font-size:11px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding:0 4px;">محتويات الكتاب</div>
+        <div id="chapters-list"></div>
+      </div>
+      <div style="padding:12px;border-top:1px solid rgba(255,255,255,0.06);">
+        <div style="background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.15);border-radius:10px;padding:12px;">
+          <div style="font-size:11px;color:#0ea5e9;font-weight:700;margin-bottom:8px;">تقدمك في الكتاب</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;color:#64748b;">الأقسام المكتملة</span>
+            <span id="completed-count" style="font-size:12px;font-weight:700;color:#e2e8f0;">0/0</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.06);border-radius:999px;height:4px;">
+            <div id="sidebar-progress-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#10b981,#0ea5e9);border-radius:999px;transition:width 0.5s ease;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="content-area" onscroll="handleContentScroll(this)">
+      <div id="section-content" style="max-width:860px;margin:0 auto;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const CHAPTERS = [
+  {
+    id: "ch1",
+    title: "الفصل الأول: اضطرابات الجهاز العضلي الهيكلي",
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    accent: "#0ea5e9",
+    pages: "9-48",
+    sections: [
+      {
+        id: "s1_1",
+        title: "الرضوض العضلية الهيكلية",
+        subtitle: "Musculoskeletal Trauma",
+        content: [
+          { term: "الكدمة (Contusion)", def: "إصابة في الأنسجة الرخوة ناتجة عن قوة مفاجئة أو سقوط." },
+          { term: "الالتواء (Sprain)", def: "إصابة رضية تتمزق فيها ألياف الرباط نتيجة حركة لوية." },
+          { term: "الشد (Strain)", def: "إصابة رضية تتمزق فيها ألياف الوتر أو العضلة بسبب الإفراط في الاستخدام." },
+          { term: "الخلع الكامل (Dislocation)", def: "انقطاع كامل للمفصل حيث لا تلامس السطحين المفصليين بعضهما." },
+          { term: "الخلع الجزئي (Subluxation)", def: "اضطراب طفيف في المفصل مع بقاء تواصل مفصلي جزئي." },
+        ],
+        keyPoints: [
+          "تصنيف الالتواء والشد من الدرجة I إلى III حسب نسبة الألياف الممزقة",
+          "تقييم الأطراف: الدورة الدموية، الحس، الحركة، الأنسجة الرخوة",
+          "أولويات المسح الأولي: مجرى الهواء ← التنفس ← الدورة الدموية ← العجز العصبي",
+          "إسعافات الأولى: إزالة المجوهرات، التحكم في النزيف، وضع جبيرة",
+        ],
+        quiz: [
+          { q: "ما درجة الالتواء التي يتمزق فيها 25-75% من الألياف؟", opts: ["الدرجة الأولى","الدرجة الثانية","الدرجة الثالثة","الدرجة الصفر"], ans: 1, exp: "الدرجة الثانية: تمزق 25-75% من الألياف مع عدم استقرار طفيف وألم معتدل وتورم وكدمات." },
+          { q: "ما الفرق بين الخلع والخلع الجزئي؟", opts: ["لا فرق بينهما","الخلع الجزئي أشد خطورة","الخلع الكامل: لا تلامس للسطوح المفصلية؛ الجزئي: يبقى تواصل جزئي","الخلع الجزئي لا يسبب ألماً"], ans: 2, exp: "الخلع الكامل (Dislocation): انقطاع تام لا تلامس فيه السطحان المفصليان. الخلع الجزئي (Subluxation): اضطراب طفيف مع بقاء تواصل مفصلي." },
+          { q: "ما هو الترتيب الصحيح لأولويات إسعافات الطوارئ (ABCDEs)؟", opts: ["الدورة الدموية، مجرى الهواء، التنفس، العجز، الكشف","مجرى الهواء، التنفس، الدورة الدموية، العجز، الكشف","التنفس، مجرى الهواء، الدورة الدموية، العجز، الكشف","العجز، مجرى الهواء، التنفس، الدورة الدموية، الكشف"], ans: 1, exp: "A=Airway (مجرى الهواء)، B=Breathing (التنفس)، C=Circulation (الدورة الدموية)، D=Disability (العجز العصبي)، E=Exposure (الكشف)." },
+        ]
+      },
+      {
+        id: "s1_2",
+        title: "الكسور وشفاؤها ومضاعفاتها",
+        subtitle: "Fractures, Healing & Complications",
+        content: [
+          { term: "الكسر (Fracture)", def: "اضطراب كامل أو جزئي في استمرارية بنية العظام." },
+          { term: "الكسر المفتت (Comminuted)", def: "كسر يُنتج عدة شظايا عظمية." },
+          { term: "الكسر المفتوح (Open)", def: "كسر تنفتح فيه الجلد أو الغشاء المخاطي للعظمة المكسورة." },
+          { term: "متلازمة الحجرة (Compartment Syndrome)", def: "ضغط متزايد داخل الحجرة العضلية يُسبب نقص تروية وتنخر الأنسجة." },
+          { term: "الانسداد الدهني (Fat Embolism)", def: "قطرات دهنية من نخاع العظام تنتشر في الأوعية الدموية بعد كسر هيكلي." },
+        ],
+        keyPoints: [
+          "قاعدة 5Ps لتقييم الكسر: Pain, Pulse, Pallor, Paresthesia, Paralysis",
+          "مراحل شفاء الكسر: ورم دموي ← نسيج حبيبي ← تكوين الكالوس ← التعظم ← التدمج ← إعادة البناء",
+          "ثالوث الانسداد الدهني: نقص أكسجة الدم + اضطراب عصبي + طفح نقطي",
+          "علاج الكسر: الرد ← التثبيت ← إعادة التأهيل",
+        ],
+        quiz: [
+          { q: "ما هي علامات متلازمة الحجرة التي يجب مراقبتها؟", opts: ["ألم شديد لا يستجيب للمسكنات + شحوب + برودة + تنميل","حمى وارتفاع كريات الدم البيضاء فقط","تورم بسيط مع ألم معتدل","ارتفاع ضغط الدم فقط"], ans: 0, exp: "متلازمة الحجرة: ألم شديد لا يستجيب للأفيونات، يشتد بالتمدد السلبي والرفع، جلد لامع، شحوب، برودة، تنميل، ملء شعري > 3 ثواني." },
+          { q: "ما المرحلة الأولى من شفاء الكسر؟", opts: ["تكوين الكالوس","التعظم","تكوين الورم الدموي","النسيج الحبيبي"], ans: 2, exp: "المرحلة الأولى: الورم الدموي الذي يحيط بنهايات الشظايا خلال 72 ساعة الأولى من الإصابة." },
+          { q: "ما أكثر عرض أولي للانسداد الدهني؟", opts: ["الطفح النقطي","نقص الأكسجة وسرعة التنفس","الغيبوبة","نقص الصفائح الدموية"], ans: 1, exp: "المظاهر الرئوية هي الأولى: نقص أكسجة الدم وتسرع التنفس. يظهر الطفح النقطي عادةً بعد 48-72 ساعة." },
+        ]
+      },
+      {
+        id: "s1_3",
+        title: "التهاب العظم والنقي الحاد",
+        subtitle: "Acute Osteomyelitis",
+        content: [
+          { term: "التهاب العظم والنقي (Osteomyelitis)", def: "عدوى قيحية تصيب العظم ونخاع العظم والأنسجة المحيطة." },
+          { term: "Sequestrum", def: "قطعة من العظم الميت المعزولة داخل منطقة العدوى." },
+          { term: "Involucrum", def: "طبقة جديدة من العظم تتشكل حول الـ Sequestrum." },
+        ],
+        keyPoints: [
+          "أكثر الكائنات الدقيقة شيوعاً: المكورات العنقودية الذهبية (Staphylococcus aureus)",
+          "الأعراض: حمى مفاجئة + ألم نابض + تورم + احمرار في المنطقة المصابة",
+          "العلاج: مضادات حيوية واسعة الطيف وريدياً ثم فموية + قد يلزم التدخل الجراحي",
+          "الوقاية: علاج العدوى البؤرية + إزالة القسطرة مبكراً + العناية بالجرح معقمة",
+        ],
+        quiz: [
+          { q: "ما أكثر مسبب لالتهاب العظم والنقي الحاد؟", opts: ["Escherichia coli","Staphylococcus aureus","Pseudomonas","Streptococcus"], ans: 1, exp: "Staphylococcus aureus هو الكائن الدقيق الأكثر شيوعاً في التهاب العظم والنقي الحاد." },
+          { q: "ما طريقة إعطاء المضادات الحيوية أولاً في التهاب العظم والنقي؟", opts: ["فموية مباشرة","وريدية أولاً لبلوغ مستوى علاجي كافٍ في الدم","حقن موضعي في العظم","عن طريق التنفس"], ans: 1, exp: "تُعطى المضادات الحيوية وريدياً أولاً لتأسيس مستوى علاجي كافٍ في الدم، ثم تُحوَّل إلى الشكل الفموي عند السيطرة على العدوى." },
+        ]
+      },
+      {
+        id: "s1_4",
+        title: "التهاب المفاصل التنكسي والروماتويدي",
+        subtitle: "Osteoarthritis & Rheumatoid Arthritis",
+        content: [
+          { term: "الفُصال العظمي (Osteoarthritis)", def: "أكثر أمراض المفاصل المزمنة شيوعاً؛ تحلل الغضروف يُسبب ألماً وتيبساً." },
+          { term: "التهاب المفاصل الروماتويدي (RA)", def: "مرض مناعي ذاتي مزمن يصيب الغشاء الزليلي لمفاصل متعددة." },
+          { term: "Pannus", def: "نسيج التهابي ليفي يدمر الغضروف والعظم في مفصل الـ RA." },
+          { term: "العقيدات الروماتويدية", def: "تكتلات صلبة تحت الجلد فوق النتوءات العظمية في مرضى الـ RA." },
+        ],
+        keyPoints: [
+          "OA: مرض تنكسي يصيب الركبة والورك والعمود الفقري؛ لا علاج نهائي",
+          "RA: مرض مناعي ذاتي، النساء أكثر (3:1)، يصيب عمر 20-40 سنة",
+          "تيبس صباحي > ساعة في RA (مميز) مقابل تيبس قصير في OA",
+          "تشوهات اليد في RA: انحراف زندي + تشوه عنق البجع",
+        ],
+        quiz: [
+          { q: "ما الذي يميز RA عن OA من حيث التيبس الصباحي؟", opts: ["التيبس في OA يستمر أكثر من ساعة","التيبس في RA يستمر أكثر من ساعة ويتحسن بالحركة","كلاهما متساوٍ","OA لا يسبب تيبساً إطلاقاً"], ans: 1, exp: "التيبس الصباحي في RA مميز: يستمر أكثر من ساعة ويتحسن بالحركة. في OA التيبس قصير ويزداد بعد الراحة." },
+          { q: "ما نسبة الإناث إلى الذكور في التهاب المفاصل الروماتويدي؟", opts: ["1:1","2:1","3:1","5:1"], ans: 2, exp: "التهاب المفاصل الروماتويدي أكثر شيوعاً في النساء بنسبة 3:1 مقارنة بالرجال." },
+        ]
+      }
+    ]
+  },
+  {
+    id: "ch2",
+    title: "الفصل الثاني: اضطرابات المسالك البولية",
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+    accent: "#8b5cf6",
+    pages: "50-97",
+    sections: [
+      {
+        id: "s2_1",
+        title: "التهابات المسالك البولية",
+        subtitle: "Urinary Tract Infections",
+        content: [
+          { term: "التهاب المثانة (Cystitis)", def: "التهاب يصيب المثانة البولية، أكثر شيوعاً في النساء." },
+          { term: "التهاب الحويضة والكلية (Pyelonephritis)", def: "عدوى بكتيرية تصيب الحويضة والأنسجة الكلوية." },
+          { term: "البيلة الجرثومية (Bacteriuria)", def: "وجود بكتيريا في البول، قد تكون عرضية أو لا عرضية." },
+        ],
+        keyPoints: [
+          "E. coli: أكثر الكائنات الدقيقة شيوعاً في UTI",
+          "أعراض التهاب المثانة: حرقان عند التبول + تكرار التبول + بيلة دموية",
+          "النساء أكثر عرضة للإصابة بسبب قصر مجرى البول",
+          "العلاج: مضادات حيوية + شرب السوائل بغزارة + تعليم المريضة",
+        ],
+        quiz: [
+          { q: "لماذا النساء أكثر عرضة لالتهابات المسالك البولية؟", opts: ["بسبب الهرمونات فقط","بسبب قصر مجرى البول وقربه من فتحة الشرج","بسبب ضعف المناعة","لا فرق بين الجنسين"], ans: 1, exp: "مجرى البول في المرأة أقصر (حوالي 4 سم) وأقرب من فتحة الشرج، مما يسهّل وصول البكتيريا إلى المثانة." },
+        ]
+      },
+      {
+        id: "s2_2",
+        title: "حصوات الكلى والمثانة",
+        subtitle: "Renal Calculi",
+        content: [
+          { term: "حصوات الكلى (Renal Calculi/Urolithiasis)", def: "تكتلات صلبة تتشكل في الكلى من المعادن الزائدة في البول." },
+          { term: "المغص الكلوي (Renal Colic)", def: "ألم شديد متقطع ناتج عن انسداد الحالب بالحصوة." },
+          { term: "استئصال الحصى عبر الجلد (PCNL)", def: "تفتيت وإزالة الحصوات الكبيرة عن طريق ثقب صغير في الجلد." },
+        ],
+        keyPoints: [
+          "أكثر أنواع الحصوات: كالسيوم أوكسالات (أكثر من 80%)",
+          "الألم: شديد جداً يبدأ في الخاصرة ويمتد للبطن والأعضاء التناسلية",
+          "التشخيص: CT scan بدون صبغة (الأدق)؛ تحليل بول؛ تحليل الحصوة",
+          "علاج: شرب سوائل + مسكنات + ESWL للحصوات المتوسطة + PCNL للكبيرة",
+        ],
+        quiz: [
+          { q: "ما أكثر أنواع حصوات الكلى شيوعاً؟", opts: ["حمض البوليك","السيستين","كالسيوم أوكسالات","ستروفايت"], ans: 2, exp: "حصوات كالسيوم أوكسالات هي الأكثر شيوعاً (أكثر من 80% من الحالات)." },
+          { q: "ما أدق وسيلة تصوير لتشخيص حصوات الكلى؟", opts: ["الأشعة السينية البسيطة","الموجات فوق الصوتية","CT scan بدون صبغة","التصوير بالرنين المغناطيسي"], ans: 2, exp: "CT scan بدون صبغة (Non-contrast CT) هو الأدق في الكشف عن جميع أنواع حصوات الكلى وتحديد موقعها وحجمها." },
+        ]
+      },
+      {
+        id: "s2_3",
+        title: "ضخامة البروستاتا الحميدة",
+        subtitle: "Benign Prostatic Hyperplasia (BPH)",
+        content: [
+          { term: "ضخامة البروستاتا الحميدة (BPH)", def: "تضخم غير سرطاني في غدة البروستاتا يُسبب أعراض انسداد المسالك البولية." },
+          { term: "استئصال البروستاتا عبر الإحليل (TURP)", def: "إجراء جراحي شائع لإزالة أنسجة البروستاتا المضغوطة على مجرى البول." },
+        ],
+        keyPoints: [
+          "يصيب > 50% من الرجال فوق 60 سنة",
+          "الأعراض: صعوبة بدء التبول + تدفق ضعيف + تكرار + إلحاح + نكتبة",
+          "التشخيص: PSA + مقياس IPSS + تنظير + تدفق البول",
+          "العلاج: أدوية (α-blockers, 5α-reductase inhibitors) أو TURP",
+        ],
+        quiz: [
+          { q: "ما العمر الأكثر شيوعاً للإصابة بـ BPH؟", opts: ["30-40 سنة","40-50 سنة","فوق 60 سنة","فوق 80 سنة فقط"], ans: 2, exp: "ضخامة البروستاتا الحميدة تصيب أكثر من 50% من الرجال فوق سن 60 عاماً." },
+        ]
+      },
+      {
+        id: "s2_4",
+        title: "الفشل الكلوي والغسيل الكلوي",
+        subtitle: "Renal Failure & Dialysis",
+        content: [
+          { term: "الفشل الكلوي الحاد (AKI)", def: "فقدان مفاجئ لوظيفة الكلى مع تراكم النفايات النيتروجينية." },
+          { term: "الفشل الكلوي المزمن (CKD)", def: "تدهور تدريجي ومستمر في وظيفة الكلى لمدة > 3 أشهر." },
+          { term: "غسيل الكلى (Dialysis)", def: "إجراء لتنقية الدم من الفضلات حين تعجز الكلى عن ذلك." },
+          { term: "غسيل الكلى الدموي (Hemodialysis)", def: "ترشيح الدم خارج الجسم عبر ماكينة غسيل خاصة." },
+          { term: "الغسيل البريتوني (Peritoneal Dialysis)", def: "استخدام الصفاق كغشاء ترشيح طبيعي داخل البطن." },
+        ],
+        keyPoints: [
+          "أسباب AKI: ما قبل الكلى (نقص حجم الدم) + كلوية + ما بعد الكلى (انسداد)",
+          "أعراض بول الدم: غثيان، قيء، وذمة، ارتفاع K وBUN وCreatinine",
+          "مؤشرات غسيل الكلى الطارئ: فرط K + حماض + فرط السوائل + أعراض بولية شديدة",
+          "النظام الغذائي: تقليل K والبوتاسيوم والصوديوم والفوسفور وتقييد السوائل",
+        ],
+        quiz: [
+          { q: "ما الأنواع الثلاثة لأسباب الفشل الكلوي الحاد؟", opts: ["جرثومي، فيروسي، فطري","ما قبل الكلوي، كلوي، ما بعد الكلوي","وراثي، اكتسابي، بيئي","حاد، مزمن، تحت حاد"], ans: 1, exp: "1- ما قبل الكلوي: نقص تروية الكلى (نزيف، جفاف). 2- كلوي: تلف مباشر في الكلى. 3- ما بعد الكلوي: انسداد مجرى البول." },
+          { q: "ما مؤشر فرط بوتاسيوم الدم الذي يستدعي غسيل الكلى الطارئ؟", opts: ["K > 5 mEq/L","K > 6.5 mEq/L مع تغيرات ECG","K > 4.5 mEq/L","أي ارتفاع في K"], ans: 1, exp: "فرط البوتاسيوم الشديد (K > 6.5 mEq/L) مع تغيرات في مخطط القلب يعد من مؤشرات الغسيل الكلوي الطارئ." },
+        ]
+      }
+    ]
+  },
+  {
+    id: "ch3",
+    title: "الفصل الثالث: الاضطرابات العصبية",
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14Z"/></svg>`,
+    accent: "#10b981",
+    pages: "98-126",
+    sections: [
+      {
+        id: "s3_1",
+        title: "الصرع والنوبات",
+        subtitle: "Seizures & Epilepsy",
+        content: [
+          { term: "النوبة (Seizure)", def: "نشاط كهربي غير منتظم في الدماغ يُسبب تغيرات في السلوك أو الوعي أو الحركة." },
+          { term: "الصرع (Epilepsy)", def: "اضطراب مزمن يتميز بتكرار النوبات بسبب استعداد مستمر للنشاط الكهربي الشاذ." },
+          { term: "الحالة الصرعية (Status Epilepticus)", def: "نوبة مستمرة > 5 دقائق أو نوبات متعاقبة بدون استعادة الوعي. حالة طارئة!" },
+        ],
+        keyPoints: [
+          "الرعاية أثناء النوبة: وضع المريض على جانبه + حماية الرأس + لا تضع شيئاً في الفم!",
+          "الحالة الصرعية: طارئة طبية - أعطِ Diazepam IV فوراً",
+          "أسباب النوبة: حمى، نقص سكر، نقص كهارل، إصابة رأس، انسحاب كحول",
+          "بعد النوبة: فترة postical (تعب وارتباك) - لا تقلق، هي طبيعية",
+        ],
+        quiz: [
+          { q: "ما أهم إجراء تمريضي أثناء النوبة؟", opts: ["إدخال عصا خشبية في الفم لحماية اللسان","وضع المريض على جانبه وحماية رأسه","ربط يدي المريض لمنع الأذى","إعطاء ماء لتبريد الجسم"], ans: 1, exp: "وضع المريض على الجانب يمنع استنشاق الإفرازات. لا تضع أبداً أي شيء في الفم، لأن ذلك يُسبب كسر الأسنان أو إصابة الممرض." },
+          { q: "ما تعريف الحالة الصرعية (Status Epilepticus)؟", opts: ["نوبة تستمر أقل من دقيقة","نوبة تستمر > 5 دقائق أو نوبات متعاقبة بلا استعادة الوعي","نوبتان في يوم واحد","أي نوبة تحدث أثناء النوم"], ans: 1, exp: "الحالة الصرعية: نوبة مستمرة أكثر من 5 دقائق، أو نوبتان أو أكثر متعاقبتان بدون استعادة كاملة للوعي. هي حالة طوارئ تستوجب Diazepam IV فوراً." },
+        ]
+      },
+      {
+        id: "s3_2",
+        title: "التهاب السحايا والتهاب الدماغ",
+        subtitle: "Meningitis & Encephalitis",
+        content: [
+          { term: "التهاب السحايا (Meningitis)", def: "التهاب في الأغشية المحيطة بالدماغ والحبل الشوكي، قد يكون بكتيرياً أو فيروسياً." },
+          { term: "ثالوث التهاب السحايا", def: "صداع + حمى + تيبس الرقبة (الثالوث الكلاسيكي للتشخيص)." },
+          { term: "علامة كيرنيج (Kernig's sign)", def: "عدم القدرة على مد الركبة عند ثني الفخذ - علامة تهيج السحايا." },
+          { term: "التهاب الدماغ (Encephalitis)", def: "التهاب في أنسجة الدماغ نفسها، غالباً فيروسي، أشد خطورة من التهاب السحايا." },
+        ],
+        keyPoints: [
+          "التهاب السحايا البكتيري طارئ طبي - مضادات حيوية فورية قبل نتائج الزرع!",
+          "البزل القطني: الإجراء الأساسي للتشخيص - فحص السائل الشوكي",
+          "الوقاية: التطعيم ضد المكورات السحائية والمستدمية الإنفلونزية",
+          "الرعاية: عزل + إضاءة خافتة + تقليل الضوضاء + رفع رأس السرير 30°",
+        ],
+        quiz: [
+          { q: "ما الثالوث الكلاسيكي لالتهاب السحايا؟", opts: ["حمى + سعال + ضيق تنفس","صداع + حمى + تيبس الرقبة","غثيان + قيء + اسهال","ألم مفاصل + طفح + حمى"], ans: 1, exp: "الثالوث الكلاسيكي لالتهاب السحايا: 1- صداع شديد 2- حمى مرتفعة 3- تيبس الرقبة (صعوبة ثني العنق للأمام)." },
+          { q: "ما الإجراء الأساسي لتشخيص التهاب السحايا؟", opts: ["CT scan الدماغ","MRI الدماغ","البزل القطني وفحص السائل الشوكي","فحص الدم الكامل"], ans: 2, exp: "البزل القطني (Lumbar Puncture) هو الإجراء الأساسي للتشخيص. فحص السائل الشوكي يُحدد نوع الالتهاب (بكتيري، فيروسي) والعلاج المناسب." },
+        ]
+      },
+      {
+        id: "s3_3",
+        title: "السكتة الدماغية",
+        subtitle: "Stroke (CVA)",
+        content: [
+          { term: "السكتة الدماغية (Stroke/CVA)", def: "اضطراب مفاجئ في إمداد الدم للدماغ يُسبب تلفاً عصبياً." },
+          { term: "السكتة الإقفارية (Ischemic)", def: "توقف تدفق الدم بسبب جلطة. تمثل 85% من حالات السكتة." },
+          { term: "السكتة النزفية (Hemorrhagic)", def: "نزيف في أو حول أنسجة الدماغ. أشد خطورة بالرغم من ندرتها النسبية." },
+          { term: "TIA", def: "نوبة نقص تروية عابرة: أعراض عصبية مؤقتة تتعافى كلياً خلال 24 ساعة." },
+        ],
+        keyPoints: [
+          "FAST: Face drooping + Arm weakness + Speech difficulty + Time to call emergency",
+          "نافذة tPA: 3-4.5 ساعة من بداية الأعراض للسكتة الإقفارية فقط",
+          "عوامل الخطر: ارتفاع ضغط الدم (الأهم) + التدخين + السكري + الرجفان الأذيني",
+          "الرعاية الحادة: مراقبة العلامات الحيوية + منع المضاعفات + إعادة التأهيل المبكر",
+        ],
+        quiz: [
+          { q: "ما اختصار FAST في التعرف على السكتة الدماغية؟", opts: ["Fever, Abdominal pain, Seizure, Treatment","Face drooping, Arm weakness, Speech difficulty, Time to call emergency","Fatigue, Anxiety, Stress, Tremor","Focus, Attention, Sensation, Thought"], ans: 1, exp: "FAST = F: تدلي الوجه، A: ضعف الذراع، S: صعوبة الكلام، T: الوقت للاتصال بالطوارئ. طريقة سريعة للتعرف على أعراض السكتة." },
+          { q: "ما نسبة السكتة الإقفارية من إجمالي حالات السكتة؟", opts: ["50%","65%","85%","95%"], ans: 2, exp: "السكتة الإقفارية (بسبب جلطة) تمثل حوالي 85% من حالات السكتة الدماغية. السكتة النزفية أقل شيوعاً لكن أشد خطورة." },
+        ]
+      }
+    ]
+  },
+  {
+    id: "ch4",
+    title: "الفصل الرابع: إدارة الحروق",
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+    accent: "#f97316",
+    pages: "127-169",
+    sections: [
+      {
+        id: "s4_1",
+        title: "تصنيف الحروق وتقييمها",
+        subtitle: "Burn Classification & Assessment",
+        content: [
+          { term: "حرق الدرجة الأولى (Superficial)", def: "يصيب البشرة فقط. احمرار + ألم + لا فقاعات. مثال: حروق الشمس." },
+          { term: "حرق الدرجة الثانية السطحي", def: "يصيب البشرة وجزء من الأدمة. فقاعات + ألم شديد + قاعدة رطبة وردية." },
+          { term: "حرق الدرجة الثانية العميق", def: "يصيب معظم الأدمة. أقل ألماً + قاعدة شاحبة أو محددة." },
+          { term: "حرق الدرجة الثالثة (Full-thickness)", def: "يدمر البشرة والأدمة كلياً. لا ألم (تلف الأعصاب) + قاعدة جلدية بيضاء/رمادية/متفحمة." },
+          { term: "قاعدة التسعة (Rule of Nines)", def: "طريقة لحساب مساحة الحرق: الرأس 9% + كل ذراع 9% + الصدر 18% + البطن 18% + كل ساق 18% + الفخذين 18%." },
+        ],
+        keyPoints: [
+          "قاعدة التسعة: أداة سريعة لتقدير مساحة الحرق عند البالغين",
+          "حساب السوائل: قاعدة باركلاند = 4 × وزن المريض(kg) × % الحرق (خلال 24 ساعة)",
+          "نصف الكمية يُعطى في 8 ساعات الأولى، النصف الآخر في 16 ساعة",
+          "مخاطر: الصدمة الحجمية + الإنتان + ضيق التنفس + نقص حرارة الجسم",
+        ],
+        quiz: [
+          { q: "ما الفرق بين حرق الدرجة الثانية والدرجة الثالثة من حيث الألم؟", opts: ["الدرجة الثالثة أشد ألماً","الدرجة الثانية أشد ألماً، والثالثة قد تكون بلا ألم","كلاهما متساوٍ","لا ألم في كليهما"], ans: 1, exp: "حرق الدرجة الثانية مؤلم جداً لأن نهايات الأعصاب سليمة. حرق الدرجة الثالثة قد يكون بلا ألم لأن الأعصاب دُمرت." },
+          { q: "بحسب قاعدة التسعة، ما نسبة الساق الكاملة من مساحة الجسم؟", opts: ["9%","18%","27%","36%"], ans: 1, exp: "كل ساق كاملة (الفخذ + الساق + القدم) تمثل 18% من مساحة الجسم بحسب قاعدة التسعة." },
+        ]
+      },
+      {
+        id: "s4_2",
+        title: "الرعاية التمريضية للمحروق",
+        subtitle: "Nursing Management of Burns",
+        content: [
+          { term: "مرحلة الإنعاش (Resuscitative Phase)", def: "أول 48-72 ساعة: تقييم + إنعاش سوائل + وقاية من الصدمة." },
+          { term: "مرحلة التكيف الحاد (Acute Phase)", def: "من 48 ساعة حتى إغلاق الجروح: رعاية الجروح + منع الإنتان + التغذية." },
+          { term: "مرحلة إعادة التأهيل", def: "من إغلاق الجروح حتى التعافي الكامل: تقليص الندوب + العلاج الطبيعي + الدعم النفسي." },
+          { term: "Escharotomy", def: "شق جراحي في الكساح الجلدي الصلب لتخفيف ضغط متلازمة الحجرة في الحروق." },
+        ],
+        keyPoints: [
+          "أولوية العلاج: ABC أولاً + وضع خط وريدي + حساب السوائل",
+          "رعاية الجروح: تنظيف + إزالة الكساح + تضميد معقم + مضادات حيوية موضعية (Silver Sulfadiazine)",
+          "التغذية: بروتين عالٍ + سعرات حرارية عالية لدعم الشفاء",
+          "الدعم النفسي: صورة الجسم + الاكتئاب + الخوف من المستقبل",
+        ],
+        quiz: [
+          { q: "ما معادلة باركلاند لحساب السوائل في حالات الحروق؟", opts: ["2 × وزن المريض × % الحرق","4 × وزن المريض (kg) × % الحرق","6 × وزن المريض × % الحرق","3 × وزن المريض × % الحرق"], ans: 1, exp: "معادلة باركلاند: 4 mL × وزن المريض بالكيلوغرام × نسبة الحرق المئوية. النصف الأول يُعطى في 8 ساعات، والنصف الثاني في 16 ساعة." },
+          { q: "ما الهدف الرئيسي من Escharotomy في الحروق؟", opts: ["تنظيف الجرح من الكساح","تخفيف الضغط في متلازمة الحجرة الناتجة عن الحرق الكامل","تحضير الجرح للترقيع","منع الإنتان"], ans: 1, exp: "Escharotomy: شق الكساح الصلب الناتج عن الحرق الكامل لتخفيف ضغط متلازمة الحجرة واستعادة التروية." },
+        ]
+      }
+    ]
+  }
+];
+
+const GLOSSARY = {
+  "Fracture": "كسر: اضطراب في استمرارية بنية العظام نتيجة قوة تتجاوز قدرة العظم على التحمل.",
+  "Osteomyelitis": "التهاب العظم والنقي: عدوى بكتيرية تصيب العظم ونخاع العظم والأنسجة المحيطة.",
+  "Compartment Syndrome": "متلازمة الحجرة: ضغط متزايد داخل الحجرة العضلية يُقلل التروية ويُسبب نقص أكسجة الأنسجة.",
+  "Epilepsy": "الصرع: اضطراب مزمن يتميز بتكرار النوبات بسبب استعداد دماغي للنشاط الكهربي الشاذ.",
+  "Status Epilepticus": "الحالة الصرعية: نوبة مستمرة > 5 دقائق أو نوبات متعاقبة بدون استعادة الوعي - طارئة طبية.",
+  "Meningitis": "التهاب السحايا: التهاب في الأغشية المحيطة بالدماغ والحبل الشوكي.",
+  "Stroke": "السكتة الدماغية: توقف مفاجئ في التروية الدموية لجزء من الدماغ يُسبب تلفاً عصبياً.",
+  "TIA": "النوبة الإقفارية العابرة: أعراض عصبية مؤقتة تتعافى كلياً خلال 24 ساعة.",
+  "Renal Calculi": "حصوات الكلى: تجمعات صلبة من المعادن تتشكل داخل الكلى.",
+  "BPH": "ضخامة البروستاتا الحميدة: تضخم غير سرطاني يُسبب أعراض انسداد مجرى البول.",
+  "Dialysis": "غسيل الكلى: إجراء لتنقية الدم من الفضلات عوضاً عن الكلى المعطوبة.",
+  "AKI": "الفشل الكلوي الحاد: فقدان مفاجئ لوظيفة الكلى مع تراكم النفايات.",
+  "Osteoarthritis": "الفُصال العظمي: مرض مفصلي تنكسي مزمن يصيب الغضروف.",
+  "Rheumatoid Arthritis": "التهاب المفاصل الروماتويدي: مرض مناعي ذاتي يصيب الغشاء الزليلي للمفاصل.",
+  "PCNL": "استئصال الحصى عبر الجلد: إزالة الحصوات الكبيرة عبر ثقب صغير في الجلد.",
+  "Rule of Nines": "قاعدة التسعة: طريقة لتقدير مساحة الحرق: الرأس 9%، كل ذراع 9%، الجذع الأمامي 18%، الجذع الخلفي 18%، كل ساق 18%.",
+  "Parkland Formula": "معادلة باركلاند: 4 × وزن المريض (kg) × % الحرق = كمية السوائل في 24 ساعة.",
+};
+
+// ========== STATE ==========
+let sidebarOpen = true;
+let activeChapter = "ch1";
+let activeSection = "s1_1";
+let expandedCards = {};
+let quizAnswers = {};
+let showQuiz = {};
+let completedSections = new Set();
+let expandedChapters = { ch1: true };
+let activeTooltip = null;
+
+const allSections = CHAPTERS.flatMap(ch => ch.sections);
+const totalSections = allSections.length;
+
+// ========== HELPERS ==========
+function getProgressPercent() {
+  return Math.round((completedSections.size / totalSections) * 100);
+}
+
+function getCurrentChapter() {
+  return CHAPTERS.find(c => c.id === activeChapter);
+}
+
+function getCurrentSection() {
+  return allSections.find(s => s.id === activeSection);
+}
+
+function markComplete(secId) {
+  completedSections.add(secId);
+  updateProgressUI();
+}
+
+function updateProgressUI() {
+  const pct = getProgressPercent();
+  document.getElementById('progress-pct').textContent = pct + '% مكتمل';
+  document.getElementById('sidebar-progress-bar').style.width = pct + '%';
+  document.getElementById('completed-count').textContent = completedSections.size + '/' + totalSections;
+  renderSidebar();
+}
+
+// ========== SIDEBAR ==========
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  const sb = document.getElementById('sidebar');
+  const icon = document.getElementById('sidebar-icon');
+  sb.style.display = sidebarOpen ? '' : 'none';
+  icon.innerHTML = sidebarOpen
+    ? '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+    : '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
+  icon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('fill', 'none');
+  icon.setAttribute('stroke', 'currentColor');
+  icon.setAttribute('stroke-width', '2');
+  icon.setAttribute('stroke-linecap', 'round');
+  icon.setAttribute('stroke-linejoin', 'round');
+}
+
+function renderSidebar() {
+  const list = document.getElementById('chapters-list');
+  list.innerHTML = CHAPTERS.map(ch => {
+    const isExpanded = expandedChapters[ch.id];
+    const chCompleted = ch.sections.filter(s => completedSections.has(s.id)).length;
+    return `
+      <div style="margin-bottom:8px;">
+        <button class="chapter-card" onclick="toggleChapter('${ch.id}')" style="width:100%;text-align:right;padding:10px 12px;background:${activeChapter===ch.id?'rgba(255,255,255,0.07)':'transparent'};border:1px solid ${activeChapter===ch.id?'rgba(255,255,255,0.12)':'transparent'};border-radius:10px;cursor:pointer;color:#e2e8f0;display:flex;align-items:center;gap:10px;">
+          <span style="color:${ch.accent};flex-shrink:0;">${ch.iconSvg}</span>
+          <div style="flex:1;text-align:right;">
+            <div style="font-size:12px;font-weight:600;line-height:1.4;">${ch.title}</div>
+            <div style="font-size:10px;color:#475569;margin-top:2px;">صفحات ${ch.pages} • ${chCompleted}/${ch.sections.length} مكتمل</div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${isExpanded?'<polyline points="18 15 12 9 6 15"/>':'<polyline points="6 9 12 15 18 9"/>'}
+          </svg>
+        </button>
+        ${isExpanded ? `<div style="margin-top:4px;">${ch.sections.map(sec => `
+          <button class="sidebar-section ${activeSection===sec.id?'section-active':''}" onclick="navigateTo('${ch.id}','${sec.id}')" style="width:100%;text-align:right;padding:8px 12px 8px 28px;background:${activeSection===sec.id?'rgba(14,165,233,0.08)':'transparent'};border:none;border-right:${activeSection===sec.id?'3px solid #0ea5e9':'3px solid transparent'};cursor:pointer;color:${activeSection===sec.id?'#0ea5e9':'#94a3b8'};display:flex;align-items:center;gap:8px;border-radius:0 0 0 8px;">
+            ${completedSections.has(sec.id)?'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>':''}
+            <span style="font-size:12px;">${sec.title}</span>
+          </button>`).join('')}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function toggleChapter(chId) {
+  expandedChapters[chId] = !expandedChapters[chId];
+  activeChapter = chId;
+  const ch = CHAPTERS.find(c => c.id === chId);
+  if (ch && ch.sections.length > 0) { activeSection = ch.sections[0].id; }
+  renderSidebar();
+  renderSection();
+}
+
+function navigateTo(chId, secId) {
+  activeChapter = chId;
+  activeSection = secId;
+  expandedChapters[chId] = true;
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('content-area').scrollTop = 0;
+  activeTooltip = null;
+  renderSidebar();
+  renderSection();
+}
+
+// ========== SEARCH ==========
+function handleSearch(q) {
+  if (!q.trim()) { document.getElementById('search-results').style.display = 'none'; return; }
+  const results = [];
+  CHAPTERS.forEach(ch => {
+    ch.sections.forEach(sec => {
+      const inTitle = sec.title.toLowerCase().includes(q.toLowerCase()) || sec.subtitle.toLowerCase().includes(q.toLowerCase());
+      const inContent = sec.content.some(c => c.term.toLowerCase().includes(q.toLowerCase()) || c.def.toLowerCase().includes(q.toLowerCase()));
+      const inPoints = sec.keyPoints.some(p => p.toLowerCase().includes(q.toLowerCase()));
+      if (inTitle || inContent || inPoints) results.push({ chapterId: ch.id, sectionId: sec.id, title: sec.title, subtitle: sec.subtitle });
+    });
+  });
+  const el = document.getElementById('search-results');
+  if (results.length === 0) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = results.map(r => `
+    <button class="search-btn" onclick="navigateTo('${r.chapterId}','${r.sectionId}')">
+      <span style="font-size:14px;font-weight:600;">${r.title}</span>
+      <span style="font-size:12px;color:#64748b;">${r.subtitle}</span>
+    </button>`).join('');
+}
+
+// ========== SCROLL PROGRESS ==========
+function handleContentScroll(el) {
+  const scrollTop = el.scrollTop;
+  const scrollHeight = el.scrollHeight - el.clientHeight;
+  const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+  const pct = Math.round(progress);
+  document.getElementById('scroll-progress-bar').style.width = pct + '%';
+  document.getElementById('scroll-pct').textContent = pct + '%';
+}
+
+// ========== QUIZ ==========
+function handleQuizAnswer(key, idx) {
+  if (quizAnswers[key] !== undefined) return;
+  quizAnswers[key] = idx;
+  markComplete(activeSection);
+  renderSection();
+}
+
+function toggleQuiz(secId) {
+  showQuiz[secId] = !showQuiz[secId];
+  renderSection();
+}
+
+// ========== CARDS ==========
+function toggleCard(cardKey) {
+  expandedCards[cardKey] = !expandedCards[cardKey];
+  renderSection();
+}
+
+// ========== TOOLTIP ==========
+function toggleTooltip(term) {
+  activeTooltip = activeTooltip === term ? null : term;
+  renderSection();
+}
+
+// ========== GLOSSARY TERMS FOR SECTION ==========
+function getRelevantGlossaryTerms(section) {
+  return Object.keys(GLOSSARY).filter(k =>
+    section.content.some(c => c.term.includes(k) || k.includes(c.term.split(" ")[0])) ||
+    section.keyPoints.some(p => p.includes(k))
+  ).slice(0, 8);
+}
+
+// ========== RENDER SECTION ==========
+function renderSection() {
+  const ch = getCurrentChapter();
+  const sec = getCurrentSection();
+  if (!ch || !sec) return;
+
+  const idx = allSections.findIndex(s => s.id === activeSection);
+  const prev = idx > 0 ? allSections[idx - 1] : null;
+  const next = idx < allSections.length - 1 ? allSections[idx + 1] : null;
+  const prevCh = prev ? CHAPTERS.find(c => c.sections.some(s => s.id === prev.id)) : null;
+  const nextCh = next ? CHAPTERS.find(c => c.sections.some(s => s.id === next.id)) : null;
+
+  const glossaryTerms = getRelevantGlossaryTerms(sec);
+
+  let html = `
+    <div style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="width:4px;height:32px;background:${ch.accent};border-radius:999px;"></div>
+        <div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:4px;">${ch.title}</div>
+          <h1 style="font-size:22px;font-weight:900;color:#f1f5f9;margin:0;">${sec.title}</h1>
+          <div style="font-size:14px;color:#64748b;font-style:italic;margin-top:2px;">${sec.subtitle}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Points -->
+    <div style="background:rgba(14,165,233,0.05);border:1px solid rgba(14,165,233,0.15);border-radius:14px;padding:18px 20px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span style="font-weight:700;font-size:14px;color:#0ea5e9;">النقاط الجوهرية</span>
+      </div>
+      ${sec.keyPoints.map(pt => `
+        <div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;margin-top:8px;flex-shrink:0;"></div>
+          <span style="font-size:14px;color:#cbd5e1;line-height:1.7;">${pt}</span>
+        </div>`).join('')}
+    </div>
+
+    <!-- Expandable Study Cards -->
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span style="font-weight:700;font-size:14px;color:#8b5cf6;">المصطلحات الطبية</span>
+        <span style="font-size:11px;color:#475569;">(اضغط للتفاصيل)</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">
+        ${sec.content.map((item, i) => {
+          const cardKey = `${activeSection}_${i}`;
+          const isOpen = expandedCards[cardKey];
+          return `
+            <div class="expand-card" onclick="toggleCard('${cardKey}')" style="background:${isOpen?'rgba(139,92,246,0.1)':'rgba(255,255,255,0.03)'};border:1px solid ${isOpen?'rgba(139,92,246,0.3)':'rgba(255,255,255,0.07)'};border-radius:12px;padding:14px 16px;cursor:pointer;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;font-size:13px;color:${isOpen?'#a78bfa':'#e2e8f0'};">${item.term}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:${isOpen?'rotate(180deg)':'rotate(0deg)'};transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              ${isOpen ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(139,92,246,0.2);"><p style="font-size:13px;color:#94a3b8;line-height:1.7;margin:0;">${item.def}</p></div>` : ''}
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Glossary Tooltips -->
+    ${glossaryTerms.length > 0 ? `
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span style="font-weight:700;font-size:14px;color:#f59e0b;">مصطلحات للنقر والشرح الفوري</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${glossaryTerms.map(term => `
+          <div style="position:relative;">
+            <button onclick="toggleTooltip('${term.replace(/'/g,"\\'")}')" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:5px 12px;cursor:pointer;color:#fbbf24;font-size:12px;font-weight:600;">${term}</button>
+            ${activeTooltip === term ? `
+            <div class="tooltip-popup" style="position:absolute;bottom:calc(100% + 8px);right:0;background:#1e293b;border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:12px 14px;width:260px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+              <div style="font-weight:700;font-size:13px;color:#fbbf24;margin-bottom:6px;">${term}</div>
+              <p style="font-size:12px;color:#94a3b8;line-height:1.6;margin:0;">${GLOSSARY[term]}</p>
+            </div>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Quiz -->
+    <div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.15);border-radius:14px;padding:18px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span style="font-weight:700;font-size:14px;color:#10b981;">اختبر معلوماتك</span>
+          <span style="font-size:11px;color:#475569;">${sec.quiz.length} أسئلة</span>
+        </div>
+        <button onclick="toggleQuiz('${activeSection}')" style="background:${showQuiz[activeSection]?'rgba(16,185,129,0.2)':'rgba(16,185,129,0.1)'};border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:6px 14px;cursor:pointer;color:#10b981;font-size:12px;font-weight:600;">
+          ${showQuiz[activeSection] ? 'إخفاء الأسئلة' : 'ابدأ الاختبار'}
+        </button>
+      </div>
+      ${showQuiz[activeSection] ? `
+      <div>
+        ${sec.quiz.map((q, qi) => {
+          const key = `${activeSection}_q${qi}`;
+          const answered = quizAnswers[key];
+          return `
+            <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:${qi < sec.quiz.length - 1 ? '1px solid rgba(16,185,129,0.1)' : 'none'};">
+              <p style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:12px;line-height:1.6;">
+                <span style="color:#10b981;margin-left:6px;">س${qi+1}:</span> ${q.q}
+              </p>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${q.opts.map((opt, oi) => {
+                  const isCorrect = oi === q.ans;
+                  const isSelected = answered === oi;
+                  let bg = 'rgba(255,255,255,0.03)';
+                  let border = 'rgba(255,255,255,0.08)';
+                  let color = '#94a3b8';
+                  if (answered !== undefined) {
+                    if (isCorrect) { bg = 'rgba(16,185,129,0.15)'; border = 'rgba(16,185,129,0.4)'; color = '#10b981'; }
+                    else if (isSelected) { bg = 'rgba(239,68,68,0.1)'; border = 'rgba(239,68,68,0.4)'; color = '#ef4444'; }
+                  }
+                  return `
+                    <button class="quiz-opt" onclick="handleQuizAnswer('${key}',${oi})" ${answered !== undefined ? 'disabled' : ''} style="text-align:right;padding:10px 14px;background:${bg};border:1px solid ${border};border-radius:10px;cursor:${answered !== undefined ? 'default' : 'pointer'};color:${color};font-size:13px;display:flex;align-items:center;gap:10px;">
+                      ${answered !== undefined && isCorrect ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+                      ${answered !== undefined && isSelected && !isCorrect ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' : ''}
+                      <span>${opt}</span>
+                    </button>`;
+                }).join('')}
+              </div>
+              ${answered !== undefined ? `
+              <div style="margin-top:12px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:10px;padding:10px 14px;">
+                <div style="font-size:12px;font-weight:700;color:#0ea5e9;margin-bottom:4px;">الشرح:</div>
+                <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.7;">${q.exp}</p>
+              </div>` : ''}
+            </div>`;
+        }).join('')}
+      </div>` : ''}
+    </div>
+
+    <!-- Navigation -->
+    <div style="display:flex;justify-content:space-between;margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+      ${next ? `<button onclick="navigateTo('${nextCh.id}','${next.id}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);border-radius:10px;padding:10px 18px;cursor:pointer;color:#0ea5e9;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;"><span>التالي: ${next.title}</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>` : '<div></div>'}
+      ${prev ? `<button onclick="navigateTo('${prevCh.id}','${prev.id}')" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 18px;cursor:pointer;color:#64748b;font-size:13px;display:flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg);"><polyline points="9 18 15 12 9 6"/></svg><span>السابق: ${prev.title}</span></button>` : '<div></div>'}
+    </div>
+  `;
+
+  document.getElementById('section-content').innerHTML = html;
+}
+
+// ========== INIT ==========
+function init() {
+  document.getElementById('completed-count').textContent = '0/' + totalSections;
+  renderSidebar();
+  renderSection();
+}
+
+init();
+</script>
+</body>
+</html>
